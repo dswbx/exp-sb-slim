@@ -1,0 +1,5 @@
+bin/
+data/
+.supabase-slim/
+node_modules/
+.debug

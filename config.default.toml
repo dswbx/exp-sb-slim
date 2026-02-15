@@ -1,0 +1,12 @@
+[db]
+port = 54322
+user = "postgres"
+password = "postgres"
+
+[api]
+port = 54321          # gateway
+internal_port = 54001 # PostgREST
+
+[auth]
+port = 54002
+site_url = "http://localhost:3000"
