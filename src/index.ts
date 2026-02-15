@@ -3,6 +3,7 @@ import { generateSecret, mintJWT } from "./jwt.ts";
 import { startPostgres } from "./db/embedded.ts";
 import { downloadAll } from "./binaries/download.ts";
 import { startPostgREST } from "./binaries/postgrest.ts";
+import { startAuth } from "./binaries/auth.ts";
 import { startGateway } from "./gateway/server.ts";
 import { createLogger } from "./utils/logger.ts";
 import { mkdirSync, existsSync } from "fs";
@@ -60,9 +61,17 @@ async function main() {
    );
    log.info(`PostgREST ready on ${postgrest.url}`);
 
-   // 6. Start Gateway
+   // 6. Start Auth
+   const auth = await startAuth(
+      config,
+      secrets.jwtSecret,
+      db.connectionString("supabase_auth_admin", config.db.password)
+   );
+   log.info(`Auth ready on ${auth.url}`);
+
+   // 7. Start Gateway
    const validKeys = new Set([secrets.anonKey, secrets.serviceRoleKey]);
-   const gateway = startGateway(config, postgrest.url, validKeys);
+   const gateway = startGateway(config, postgrest.url, validKeys, auth.url);
 
    // Print connection info
    console.log("\n" + "=".repeat(60));
@@ -80,6 +89,7 @@ async function main() {
    const shutdown = async () => {
       log.info("Shutting down...");
       gateway.stop();
+      auth.stop();
       postgrest.stop();
       await db.stop();
       log.info("All services stopped");

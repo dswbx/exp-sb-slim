@@ -1,5 +1,5 @@
 import { createLogger } from "../utils/logger.ts";
-import { mkdirSync, existsSync, chmodSync } from "fs";
+import { mkdirSync, existsSync, chmodSync, copyFileSync } from "fs";
 
 const log = createLogger("download");
 
@@ -108,11 +108,28 @@ async function downloadBinary(def: BinaryDef): Promise<void> {
   log.info(`${def.name} v${version} ready`);
 }
 
+async function ensureAuth(): Promise<void> {
+  const binPath = `${BIN_DIR}/auth`;
+  if (existsSync(binPath)) {
+    log.info("auth already present, skipping");
+    return;
+  }
+
+  if (platform === "darwin") {
+    const src = `${BIN_DIR}/auth-darwin-arm64`;
+    if (!existsSync(src)) throw new Error(`Checked-in auth binary not found: ${src}`);
+    copyFileSync(src, binPath);
+    chmodSync(binPath, 0o755);
+    log.info("auth copied from checked-in darwin binary");
+  } else {
+    await downloadBinary(AUTH);
+  }
+}
+
 export async function downloadAll(): Promise<void> {
   mkdirSync(BIN_DIR, { recursive: true });
   await downloadBinary(POSTGREST);
-  // TODO: auth binary (no macOS release — needs build from source)
-  // await downloadBinary(AUTH);
+  await ensureAuth();
 }
 
 // Allow running directly: bun run src/binaries/download.ts

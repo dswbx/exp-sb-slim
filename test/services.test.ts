@@ -36,4 +36,16 @@ describe("service health", () => {
     const res = await fetch(`${s.gateway.url}/rest/v1/`);
     expect(res.status).toBe(401);
   });
+
+  test("auth health", async () => {
+    const res = await fetch(`${s.auth.url}/health`);
+    expect(res.ok).toBe(true);
+  });
+
+  test("gateway routes to auth", async () => {
+    const res = await fetch(`${s.gateway.url}/auth/v1/settings`, {
+      headers: { apikey: s.anonKey },
+    });
+    expect(res.ok).toBe(true);
+  });
 });

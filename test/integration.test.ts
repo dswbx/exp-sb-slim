@@ -17,6 +17,8 @@ beforeAll(async () => {
       user_id uuid
     );
     ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS anon_read ON public.todos;
+    DELETE FROM public.todos;
   `);
   await client.end();
 }, 120_000);
@@ -63,6 +65,26 @@ describe("CRUD via supabase-js", () => {
       .eq("title", "Test todo");
 
     expect(error).toBeNull();
+  });
+});
+
+describe("Auth", () => {
+  const email = `test-${Date.now()}@example.com`;
+  const password = "testpassword123";
+
+  test("signup", async () => {
+    const { data, error } = await s.supabase.auth.signUp({ email, password });
+    expect(error).toBeNull();
+    expect(data.user?.email).toBe(email);
+  });
+
+  test("signin", async () => {
+    const { data, error } = await s.supabase.auth.signInWithPassword({ email, password });
+    expect(error).toBeNull();
+    expect(data.session?.access_token).toBeTruthy();
+
+    // Sign out so auth session doesn't interfere with subsequent anon-key tests
+    await s.supabase.auth.signOut();
   });
 });
 

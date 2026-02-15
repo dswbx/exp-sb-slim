@@ -1,4 +1,5 @@
 bin/
+!bin/auth-*
 data/
 .supabase-slim/
 node_modules/

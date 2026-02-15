@@ -32,6 +32,7 @@ GRANT service_role TO authenticator;
 
 -- Auth admin owns auth schema
 GRANT ALL ON SCHEMA auth TO supabase_auth_admin;
+GRANT USAGE ON SCHEMA extensions TO supabase_auth_admin;
 ALTER ROLE supabase_auth_admin SET search_path TO auth, public, extensions;
 
 -- Public schema usage
