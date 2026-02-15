@@ -22,6 +22,7 @@ function authEnv(config: Config, jwtSecret: string, dbConnString: string) {
     API_EXTERNAL_URL: `http://127.0.0.1:${config.api.port}`,
     GOTRUE_API_HOST: "127.0.0.1",
     PORT: String(config.auth.port),
+    GOTRUE_JWT_DEFAULT_GROUP_NAME: "authenticated",
     GOTRUE_MAILER_AUTOCONFIRM: "true",
     GOTRUE_PHONE_AUTOCONFIRM: "true",
     GOTRUE_EXTERNAL_EMAIL_ENABLED: "true",

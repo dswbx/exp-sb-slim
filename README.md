@@ -13,6 +13,17 @@ Minimal, single-command Supabase stack for local development. Runs embedded Post
 
 All services boot from a single `bun run start` and shut down together on Ctrl+C.
 
+## Disk / download footprint (Linux x64)
+
+| Phase | What | Download | Disk |
+|-------|------|----------|------|
+| `bun install` | `@embedded-postgres/linux-x64` | ~20 MB | 56 MB |
+| `bun install` | Other deps | ~1 MB | ~2 MB |
+| First start | PostgREST (tar.xz) | 4 MB | ~76 MB |
+| First start | Auth (tar.gz) | 20 MB | ~39 MB |
+| First start | PG data dir (`data/db/`) | — | ~41 MB |
+| | **Total** | **~45 MB** | **~215 MB** |
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) v1.1+
@@ -80,6 +91,30 @@ const { data } = await supabase.auth.signUp({
 });
 ```
 
+## Todo app (stack verification)
+
+A minimal React frontend in `web/` to verify the full stack end-to-end: public todos, auth, private todos with RLS.
+
+```sh
+# terminal 1
+bun run start
+
+# terminal 2
+cd web && bun install
+bun run setup   # writes .env.local from secrets + runs SQL migration
+bun run dev     # http://localhost:5173
+```
+
+`bun run setup` reads `.supabase-slim/secrets.json`, writes `web/.env.local`, and creates the `todos` table with RLS policies via psql.
+
+**What to test:**
+1. See empty todo list (public, no auth)
+2. Sign up with any email (auto-confirmed)
+3. Add a todo — appears in list
+4. Toggle it private — still visible (you're the owner)
+5. Open incognito — private todo not visible
+6. Add a public todo — visible in both windows
+
 ## Tests
 
 ```sh
@@ -103,6 +138,8 @@ Defaults in `config.default.toml`, overridable via env vars:
 | `SUPABASE_API_PORT` | 54321 | Gateway port |
 | `SUPABASE_AUTH_PORT` | 54002 | Auth service port |
 | `SUPABASE_AUTH_SITE_URL` | http://localhost:3000 | Redirect URL for auth flows |
+
+
 
 ## Architecture
 

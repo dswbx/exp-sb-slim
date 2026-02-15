@@ -8,6 +8,20 @@ export interface Gateway {
   stop: () => void;
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, content-profile, accept-profile, range, prefer, x-supabase-api-version",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Expose-Headers": "content-range, range, x-supabase-api-version",
+};
+
+function withCors(res: Response): Response {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v);
+  return new Response(res.body, { status: res.status, headers });
+}
+
 export function startGateway(
   config: Config,
   postgrestUrl: string,
@@ -19,15 +33,22 @@ export function startGateway(
     hostname: "127.0.0.1",
 
     async fetch(req) {
+      // CORS preflight
+      if (req.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: corsHeaders });
+      }
+
       const url = new URL(req.url);
 
       // Validate apikey
       const apikey = req.headers.get("apikey");
       if (!apikey || !validKeys.has(apikey)) {
-        return new Response(JSON.stringify({ error: "Invalid API key" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        });
+        return withCors(
+          new Response(JSON.stringify({ error: "Invalid API key" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
       }
 
       // Build upstream URL
@@ -43,10 +64,12 @@ export function startGateway(
       }
 
       if (!upstream) {
-        return new Response(JSON.stringify({ error: "Not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return withCors(
+          new Response(JSON.stringify({ error: "Not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
       }
 
       // Proxy the request
@@ -61,16 +84,20 @@ export function startGateway(
           body: req.body,
         });
 
-        return new Response(upstreamRes.body, {
-          status: upstreamRes.status,
-          headers: upstreamRes.headers,
-        });
+        return withCors(
+          new Response(upstreamRes.body, {
+            status: upstreamRes.status,
+            headers: upstreamRes.headers,
+          }),
+        );
       } catch (err) {
         log.error(`Proxy error: ${err}`);
-        return new Response(JSON.stringify({ error: "Upstream unavailable" }), {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        });
+        return withCors(
+          new Response(JSON.stringify({ error: "Upstream unavailable" }), {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
       }
     },
   });
