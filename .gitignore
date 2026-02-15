@@ -4,3 +4,5 @@ data/
 .supabase-slim/
 node_modules/
 .debug
+.env.local
+dist/
